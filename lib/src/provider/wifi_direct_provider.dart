@@ -7,6 +7,8 @@ import 'package:flutter_p2p_plus/protos/protos.pb.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:wifi_p2p_demo_app/src/model/basic_msg.dart';
+import 'package:wifi_p2p_demo_app/src/provider/backpack_button_provider.dart';
+import 'package:wifi_p2p_demo_app/src/provider/emr_button_state_provider.dart';
 
 final wifiDirectProvider = Provider((ref) => WifiDirectController(ref.read));
 
@@ -47,6 +49,9 @@ class WifiDirectController {
   StreamSubscription? _socketStateStreamSubscription;
 
   BasicMsg _basicMsg = BasicMsg(msg: "", timestamp: 0);
+
+  final StreamController<String> _packetStreamController = StreamController<String>.broadcast();
+  StreamSubscription? _packetMsgStreamSubscription;
 
   Future initP2p() async {
     _subscriptions.add(FlutterP2pPlus.wifiEvents.stateChange!.listen((change) {
@@ -154,23 +159,62 @@ class WifiDirectController {
 
     _socketInputStreamSubscription ??= socket?.inputStream.listen((data) {
       var msg = utf8.decode(data.data);
-      print("[Info][Socket][Input][MSG] :  $msg");
-      if(msg.split("}{").length > 1){
-        print("============ 데이터 밀려 들어옴 ==============");
-      }else{
+      print("[Info][Socket][Input][MSG] : $msg");
+
+      var _splitPacket = msg.split("#");
+      print("[_splitPacket]_splitPacket: ${_splitPacket} | ${_splitPacket.length}");
+      // if (_splitPacket.length > 1) {
+      //   debugPrint("============ 데이터 밀려 들어옴 ==============");
+      // for (int i = 0; i > _splitPacket.length; i++) {
+      //   print("[Data] _splitPacket: $i | ${_splitPacket[i]}");
+      //   if (_splitPacket[i].isNotEmpty) {
+      //     _packetStreamController.sink.add(_splitPacket[i].trim());
+      //   } else {
+      //     print("[Data] _splitPacket: $i is Empty");
+      //   }
+      // }
+
+      for (String element in _splitPacket) {
         try {
-          double diffTime = (BasicMsg.fromJson(jsonDecode(msg)).timestamp ?? 0) - (_basicMsg.timestamp ?? 0);
-          _basicMsg = BasicMsg.fromJson(jsonDecode(msg));
-          ref(p2pSocketInputDataProvider.notifier).state += "$msg - ${DateTime.now()}\n";
+          double diffTime = (BasicMsg.fromJson(jsonDecode(element)).timestamp ?? 0) - (_basicMsg.timestamp ?? 0);
+          _basicMsg = BasicMsg.fromJson(jsonDecode(element));
+          var splitMsgItem = _basicMsg.msg?.split("|") ?? [];
+          // print("splitMsgItem Length : ${splitMsgItem.length}");
+          if (splitMsgItem.length > 1) {
+            String type = splitMsgItem[0];
+            String value = splitMsgItem[1];
+            if (type == "emr") {
+              debugPrint("emr 버튼 패킷 들어옴 ");
+              if (value == "False") {
+                ref(emrButtonStateProvider.notifier).state = false;
+              } else {
+                ref(emrButtonStateProvider.notifier).state = true;
+              }
+            } else if (type == "backpack") {
+              debugPrint("backpack 버튼 패킷 들어옴 ");
+              debugPrint("===== 백팩 버튼 Value: $value");
+              var result = value.substring(1, value.length - 1);
+              // debugPrint(result);
+              var sResult = result.split(",");
+              var filterList = sResult.map((e) => e == "True" ? true : false).toList();
+              debugPrint(filterList.toString());
+              ref(backpackButtonProvider.notifier).state = filterList;
+            }
+          }
+          ref(p2pSocketInputDataProvider.notifier).state += "$element - ${DateTime.now()}\n";
           ref(p2pSocketInputTimestampProvider.notifier).state = diffTime;
         } catch (e) {
-          print("[Error] ${e.toString()}");
+          debugPrint("[Error] ${e.toString()}");
         }
       }
+
+      // } else {
+      //   _packetStreamController.sink.add(_splitPacket.first.trim());
+      // }
+
       if (ref(p2pSocketInputDataProvider).length > 5000) {
         ref(p2pSocketInputDataProvider.state).state = "";
       }
-
 
       // _rcvText += "$msg \n";
       // setState(() {
@@ -191,6 +235,42 @@ class WifiDirectController {
       //       content: Text("Socket Host Disconnected"),
       //     ));
     });
+    _packetMsgStreamSubscription?.cancel();
+    _packetMsgStreamSubscription = null;
+    _packetMsgStreamSubscription ??= _packetStreamController.stream.listen((event) {
+      debugPrint("=================== event: ${event} =====================");
+      try {
+        double diffTime = (BasicMsg.fromJson(jsonDecode(event)).timestamp ?? 0) - (_basicMsg.timestamp ?? 0);
+        _basicMsg = BasicMsg.fromJson(jsonDecode(event));
+        var splitMsgItem = _basicMsg.msg?.split("|") ?? [];
+        // print("splitMsgItem Length : ${splitMsgItem.length}");
+        if (splitMsgItem.length > 1) {
+          String type = splitMsgItem[0];
+          String value = splitMsgItem[1];
+          if (type == "emr") {
+            debugPrint("emr 버튼 패킷 들어옴 ");
+            if (value == "False") {
+              ref(emrButtonStateProvider.notifier).state = false;
+            } else {
+              ref(emrButtonStateProvider.notifier).state = true;
+            }
+          } else if (type == "backpack") {
+            debugPrint("backpack 버튼 패킷 들어옴 ");
+            debugPrint("===== 백팩 버튼 Value: $value");
+            var result = value.substring(1, value.length - 1);
+            // debugPrint(result);
+            var sResult = result.split(",");
+            var filterList = sResult.map((e) => e == "True" ? true : false).toList();
+            debugPrint(filterList.toString());
+            ref(backpackButtonProvider.notifier).state = filterList;
+          }
+        }
+        ref(p2pSocketInputDataProvider.notifier).state += "$event - ${DateTime.now()}\n";
+        ref(p2pSocketInputTimestampProvider.notifier).state = diffTime;
+      } catch (e) {
+        debugPrint("[Error] ${e.toString()}");
+      }
+    });
 
     debugPrint("_connectToPort done");
   }
@@ -205,15 +285,17 @@ class WifiDirectController {
     }
     _socketInputStreamSubscription?.cancel();
     _socketInputStreamSubscription = null;
+    _packetMsgStreamSubscription?.cancel();
+    _packetMsgStreamSubscription = null;
     ref(p2pSocketConnectionStateProvider.notifier).state = false;
     ref(p2pSocketInputDataProvider.state).state = "";
+
     // setState(() {
     //   _socketClientConnected = false;
     // });
     // if (_wifiP2pDevice != null) {
     //   result = await FlutterP2pPlus.cancelConnect(_wifiP2pDevice!) ?? false;
     // }
-
     return result;
   }
 
