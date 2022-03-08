@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,11 @@ import 'package:wifi_p2p_demo_app/src/page/demo_connected_page.dart';
 import 'package:wifi_p2p_demo_app/src/page/demo_home_page.dart';
 
 void main() {
+  if(kReleaseMode){
+      debugPrint = (String? message, {int? wrapWidth}) {
+        null;
+      };
+  }
   runApp(
     ProviderScope(
       child: MyApp(),

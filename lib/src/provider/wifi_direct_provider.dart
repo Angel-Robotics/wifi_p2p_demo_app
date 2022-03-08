@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:wifi_p2p_demo_app/src/model/basic_msg.dart';
 import 'package:wifi_p2p_demo_app/src/provider/backpack_button_provider.dart';
 import 'package:wifi_p2p_demo_app/src/provider/emr_button_state_provider.dart';
+import 'package:wifi_p2p_demo_app/src/provider/joystick_state_provider.dart';
 
 final wifiDirectProvider = Provider((ref) => WifiDirectController(ref.read));
 
@@ -26,6 +27,7 @@ final p2pSocketInputDataProvider = StateProvider<String>((ref) => "");
 
 final p2pSocketInputTimestampProvider = StateProvider<double>((ref) => 0.0);
 final p2pSocketInputTimestampAvgProvider = StateProvider<double>((ref) => 0.0);
+final benchmarkPackAvgTime = StateProvider<double>((ref)=>0.0);
 
 class WifiDirectController {
   Reader ref;
@@ -52,6 +54,8 @@ class WifiDirectController {
 
   final StreamController<String> _packetStreamController = StreamController<String>.broadcast();
   StreamSubscription? _packetMsgStreamSubscription;
+  double _sumTotalTime = 0.0;
+  int _sumTotalCount = 0;
 
   Future initP2p() async {
     _subscriptions.add(FlutterP2pPlus.wifiEvents.stateChange!.listen((change) {
@@ -175,37 +179,63 @@ class WifiDirectController {
       // }
 
       for (String element in _splitPacket) {
-        try {
-          double diffTime = (BasicMsg.fromJson(jsonDecode(element)).timestamp ?? 0) - (_basicMsg.timestamp ?? 0);
-          _basicMsg = BasicMsg.fromJson(jsonDecode(element));
-          var splitMsgItem = _basicMsg.msg?.split("|") ?? [];
-          // print("splitMsgItem Length : ${splitMsgItem.length}");
-          if (splitMsgItem.length > 1) {
-            String type = splitMsgItem[0];
-            String value = splitMsgItem[1];
-            if (type == "emr") {
-              debugPrint("emr 버튼 패킷 들어옴 ");
-              if (value == "False") {
-                ref(emrButtonStateProvider.notifier).state = false;
-              } else {
-                ref(emrButtonStateProvider.notifier).state = true;
+        // print("[Origin Msg] element : ${element}");
+        if(element.isNotEmpty && element.length > 50){
+          try {
+            var _msg = BasicMsg.fromJson(jsonDecode(element));
+            // print("[Origin Msg][fromJson] : ${[_msg]}");
+            double diffTime = (_msg.timestamp ?? 0) - (_basicMsg.timestamp ?? 0);
+            _basicMsg = BasicMsg.fromJson(jsonDecode(element));
+            var splitMsgItem = _basicMsg.msg?.split("|") ?? [];
+            // print("splitMsgItem Length : ${splitMsgItem.length}");
+            if (splitMsgItem.length > 1) {
+              String type = splitMsgItem[0];
+              String value = splitMsgItem[1];
+              if (type == "emr") {
+                debugPrint("emr 버튼 패킷 들어옴 ");
+                if (value == "False") {
+                  ref(emrButtonStateProvider.notifier).state = false;
+                } else {
+                  ref(emrButtonStateProvider.notifier).state = true;
+                }
+              } else if (type == "backpack") {
+                debugPrint("backpack 버튼 패킷 들어옴 ");
+                debugPrint("===== 백팩 버튼 Value: $value");
+                var result = value.substring(1, value.length - 1);
+                // debugPrint(result);
+                var sResult = result.split(",");
+                var filterList = sResult.map((e) => e == "True" ? true : false).toList();
+                debugPrint(filterList.toString());
+                ref(backpackButtonProvider.notifier).state = filterList;
+              }else if(type =="joy"){
+                debugPrint("조이스틱 패킷 들어옴 ");
+                debugPrint("===== 조이스틱 값 Value: $value");
+                var joyParts = value.split("@");
+                var _btnResult = joyParts[0].substring(1, joyParts[0].length - 1);
+                // debugPrint(result);
+                var sResult = _btnResult.split(",");
+                var _filterList = sResult.map((e) => e.trim() == "0" ? true : false).toList();
+                debugPrint("[JoyStick][Buttons] : ${_filterList.toString()}");
+
+                var _axisResult = joyParts[1].substring(1, joyParts[1].length - 1);
+                var _sResult = _axisResult.split(",");
+                var _filterAxisList = _sResult.map((e) => double.parse(e.trim())).toList();
+                ref(joyButtonStateProvider.notifier).updateState(_filterList);
+                ref(joyAxisStateProvider.notifier).updateState(_filterAxisList);
               }
-            } else if (type == "backpack") {
-              debugPrint("backpack 버튼 패킷 들어옴 ");
-              debugPrint("===== 백팩 버튼 Value: $value");
-              var result = value.substring(1, value.length - 1);
-              // debugPrint(result);
-              var sResult = result.split(",");
-              var filterList = sResult.map((e) => e == "True" ? true : false).toList();
-              debugPrint(filterList.toString());
-              ref(backpackButtonProvider.notifier).state = filterList;
             }
+            ref(p2pSocketInputDataProvider.notifier).state += "$element - ${DateTime.now()}\n";
+            ref(p2pSocketInputTimestampProvider.notifier).state = diffTime;
+            _sumTotalTime += diffTime;
+            _sumTotalCount++;
+            ref(benchmarkPackAvgTime.notifier).state = (_sumTotalTime / _sumTotalCount);
+
+
+          } catch (e, s) {
+            debugPrint("[Error] 변환 오류 ${e.toString()} , ${s.toString()}");
           }
-          ref(p2pSocketInputDataProvider.notifier).state += "$element - ${DateTime.now()}\n";
-          ref(p2pSocketInputTimestampProvider.notifier).state = diffTime;
-        } catch (e) {
-          debugPrint("[Error] ${e.toString()}");
         }
+
       }
 
       // } else {
@@ -265,7 +295,7 @@ class WifiDirectController {
             ref(backpackButtonProvider.notifier).state = filterList;
           }
         }
-        ref(p2pSocketInputDataProvider.notifier).state += "$event - ${DateTime.now()}\n";
+        // ref(p2pSocketInputDataProvider.notifier).state += "$event - ${DateTime.now()}\n";
         ref(p2pSocketInputTimestampProvider.notifier).state = diffTime;
       } catch (e) {
         debugPrint("[Error] ${e.toString()}");
@@ -321,5 +351,10 @@ class WifiDirectController {
   Future<bool> writeString2Host(String data) async {
     bool? result = await _socket?.writeString(data);
     return result ?? false;
+  }
+  void clearBenchmarkValues(){
+    _sumTotalTime = 0;
+    _sumTotalCount = 0;
+    ref(benchmarkPackAvgTime.notifier).state = 0;
   }
 }

@@ -168,7 +168,7 @@ packages:
       name: dart_style
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.1"
+    version: "2.2.2"
   fake_async:
     dependency: transitive
     description:
@@ -214,7 +214,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: "63f40d55882244be8ba3ef5066c93d126195caf6"
+      resolved-ref: a3a9e75ce80c388b37b11a8c82819006c22ce4a7
       url: "https://github.com/JAICHANGPARK/flutter_p2p_plus.git"
     source: git
     version: "1.0.2"
@@ -325,7 +325,7 @@ packages:
       name: json_serializable
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "6.1.4"
+    version: "6.1.5"
   lints:
     dependency: transitive
     description:
@@ -423,7 +423,7 @@ packages:
       name: permission_handler_android
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "9.0.2"
+    version: "9.0.2+1"
   permission_handler_apple:
     dependency: transitive
     description:
@@ -486,7 +486,7 @@ packages:
       name: pub_semver
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.0"
+    version: "2.1.1"
   pubspec_parse:
     dependency: transitive
     description:

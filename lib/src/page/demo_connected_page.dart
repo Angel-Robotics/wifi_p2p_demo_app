@@ -4,6 +4,7 @@ import 'package:flutter_p2p_plus/protos/protos.pb.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wifi_p2p_demo_app/src/provider/backpack_button_provider.dart';
 import 'package:wifi_p2p_demo_app/src/provider/emr_button_state_provider.dart';
+import 'package:wifi_p2p_demo_app/src/provider/joystick_state_provider.dart';
 import 'package:wifi_p2p_demo_app/src/provider/wifi_direct_provider.dart';
 
 class DemoConnectedPage extends ConsumerStatefulWidget {
@@ -94,12 +95,12 @@ class _DemoConnectedPageState extends ConsumerState<DemoConnectedPage> {
                         },
                         child: const Text("취소")),
                     TextButton(
-                        onPressed: () async{
+                        onPressed: () async {
                           Navigator.of(context).pop();
                           // Navigator.of(context).pop();
-                          try{
+                          try {
                             await ref.read(wifiDirectProvider).writeString2Host("close");
-                          }catch(error, s){
+                          } catch (error, s) {
                             debugPrint("[Error]: ${error.toString()}, ${s.toString()}");
                           }
 
@@ -123,7 +124,7 @@ class _DemoConnectedPageState extends ConsumerState<DemoConnectedPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         SizedBox(
-                          height: 200,
+                          height: 100,
                           child: Row(
                             children: [
                               Expanded(
@@ -168,7 +169,7 @@ class _DemoConnectedPageState extends ConsumerState<DemoConnectedPage> {
                         ),
                         const Divider(color: Colors.black),
                         SizedBox(
-                          height: 160,
+                          height: 100,
                           child: Row(
                             children: [
                               Expanded(
@@ -195,7 +196,7 @@ class _DemoConnectedPageState extends ConsumerState<DemoConnectedPage> {
                           color: Colors.black,
                         ),
                         SizedBox(
-                          height: 160,
+                          height: 100,
                           child: Row(
                             children: [
                               Expanded(
@@ -209,7 +210,7 @@ class _DemoConnectedPageState extends ConsumerState<DemoConnectedPage> {
                                       children: backpackState
                                           .map((e) => Container(
                                               decoration: BoxDecoration(
-                                                color: e ? Colors.green : Colors.red,
+                                                color: e ? Colors.red : Colors.green,
                                               ),
                                               child: Text("")))
                                           .toList(),
@@ -268,6 +269,7 @@ class _DemoConnectedPageState extends ConsumerState<DemoConnectedPage> {
                                 child: ListTile(
                                   onTap: () async {
                                     await ref.read(wifiDirectProvider).writeString2Host("end");
+                                    ref.read(wifiDirectProvider).clearBenchmarkValues();
                                   },
                                   title: const Text(
                                     "종료",
@@ -282,18 +284,34 @@ class _DemoConnectedPageState extends ConsumerState<DemoConnectedPage> {
                         ),
                         Consumer(builder: (context, ref, _) {
                           final diff = ref.watch(p2pSocketInputTimestampProvider);
+                          final avg = ref.watch(benchmarkPackAvgTime);
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                "${diff.toStringAsFixed(8)} ms",
-                                style: const TextStyle(
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      "패킷타임: ${diff.toStringAsFixed(8)} s",
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      "평균: ${avg.toStringAsFixed(8)} s",
+                                      style: const TextStyle(
+                                        fontSize: 32,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               Text(
-                                "${(diff / 1000).toStringAsFixed(8)} s",
+                                "${(diff * 1000).toStringAsFixed(8)} ms",
                                 style: const TextStyle(
                                   fontSize: 48,
                                   fontWeight: FontWeight.bold,
@@ -306,7 +324,7 @@ class _DemoConnectedPageState extends ConsumerState<DemoConnectedPage> {
                     ),
                   )),
               Expanded(
-                  flex: 5,
+                  flex: 7,
                   child: Row(
                     children: [
                       Expanded(
@@ -346,7 +364,60 @@ class _DemoConnectedPageState extends ConsumerState<DemoConnectedPage> {
                           ],
                         ),
                       )),
-                      const Expanded(child: Placeholder())
+                      Expanded(
+                          child: Column(
+                        children: [
+                          SizedBox(
+                            // height: 300,
+                            child: Consumer(builder: (context, ref, _) {
+                              final joy = ref.watch(joyButtonStateProvider);
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: GridView.count(
+                                  shrinkWrap: true,
+                                  crossAxisCount: 6,
+                                  crossAxisSpacing: 8,
+                                  mainAxisSpacing: 8,
+                                  children: joy
+                                      .map(
+                                        (e) => Container(
+                                          decoration: BoxDecoration(
+                                            color: e ? Colors.red : Colors.green,
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              );
+                            }),
+                          ),
+                          Consumer(builder: (context, ref, _) {
+                            final joy = ref.watch(joyAxisStateProvider);
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: GridView.count(
+                                shrinkWrap: true,
+                                crossAxisCount: 4,
+                                crossAxisSpacing: 8,
+                                mainAxisSpacing: 8,
+                                children: joy
+                                    .map(
+                                      (e) => Container(
+                                        decoration: BoxDecoration(
+                                          border: Border.all(),
+                                        ),
+                                        padding: EdgeInsets.all(8),
+                                        child: Center(
+                                          child: Text(e.toStringAsFixed(8)),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            );
+                          }),
+                        ],
+                      ))
                     ],
                   )),
             ],
