@@ -163,10 +163,10 @@ class WifiDirectController {
 
     _socketInputStreamSubscription ??= socket?.inputStream.listen((data) {
       var msg = utf8.decode(data.data);
-      print("[Info][Socket][Input][MSG] : $msg");
+      debugPrint("[Info][Socket][Input][MSG] : $msg");
 
       var _splitPacket = msg.split("#");
-      print("[_splitPacket]_splitPacket: ${_splitPacket} | ${_splitPacket.length}");
+      debugPrint("[_splitPacket]_splitPacket: ${_splitPacket} | ${_splitPacket.length}");
       // if (_splitPacket.length > 1) {
       //   debugPrint("============ 데이터 밀려 들어옴 ==============");
       // for (int i = 0; i > _splitPacket.length; i++) {
@@ -224,12 +224,11 @@ class WifiDirectController {
                 ref(joyAxisStateProvider.notifier).updateState(_filterAxisList);
               }
             }
-            ref(p2pSocketInputDataProvider.notifier).state += "$element - ${DateTime.now()}\n";
-            ref(p2pSocketInputTimestampProvider.notifier).state = diffTime;
+            // ref(p2pSocketInputDataProvider.notifier).state += "$element - ${DateTime.now()}\n";
             _sumTotalTime += diffTime;
             _sumTotalCount++;
+            ref(p2pSocketInputTimestampProvider.notifier).state = diffTime;
             ref(benchmarkPackAvgTime.notifier).state = (_sumTotalTime / _sumTotalCount);
-
 
           } catch (e, s) {
             debugPrint("[Error] 변환 오류 ${e.toString()} , ${s.toString()}");

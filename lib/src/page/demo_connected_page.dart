@@ -168,62 +168,7 @@ class _DemoConnectedPageState extends ConsumerState<DemoConnectedPage> {
                           ),
                         ),
                         const Divider(color: Colors.black),
-                        SizedBox(
-                          height: 100,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Consumer(
-                                  builder: (BuildContext context, WidgetRef ref, Widget? child) {
-                                    final emrState = ref.watch(emrButtonStateProvider);
-                                    return Container(
-                                      height: double.infinity,
-                                      decoration: BoxDecoration(
-                                        color: emrState ? Colors.green : Colors.red,
-                                      ),
-                                      child: const Center(
-                                          child: Text(
-                                        "비상버튼",
-                                      )),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Divider(
-                          color: Colors.black,
-                        ),
-                        SizedBox(
-                          height: 100,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Consumer(
-                                  builder: (BuildContext context, WidgetRef ref, Widget? child) {
-                                    final backpackState = ref.watch(backpackButtonProvider);
-                                    return GridView.count(
-                                      crossAxisCount: 4,
-                                      mainAxisSpacing: 4,
-                                      crossAxisSpacing: 4,
-                                      children: backpackState
-                                          .map((e) => Container(
-                                              decoration: BoxDecoration(
-                                                color: e ? Colors.red : Colors.green,
-                                              ),
-                                              child: Text("")))
-                                          .toList(),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Divider(
-                          color: Colors.black,
-                        ),
+
                         ListTile(
                           title: const Text("아이피 할당"),
                           trailing: Consumer(
@@ -319,7 +264,67 @@ class _DemoConnectedPageState extends ConsumerState<DemoConnectedPage> {
                               ),
                             ],
                           );
-                        })
+                        }),
+                        const Divider(
+                          color: Colors.black,
+                        ),
+                        SizedBox(
+                          height: 100,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Consumer(
+                                  builder: (BuildContext context, WidgetRef ref, Widget? child) {
+                                    final emrState = ref.watch(emrButtonStateProvider);
+                                    return Container(
+                                      height: double.infinity,
+                                      decoration: BoxDecoration(
+                                        color: emrState ? Colors.green : Colors.red,
+                                      ),
+                                      child: const Center(
+                                          child: Text(
+                                            "비상버튼",
+                                          )),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(
+                          color: Colors.black,
+                        ),
+                        SizedBox(
+                          height: 100,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Consumer(
+                                  builder: (BuildContext context, WidgetRef ref, Widget? child) {
+                                    final backpackState = ref.watch(backpackButtonProvider);
+                                    return GridView.count(
+                                      crossAxisCount: 4,
+                                      mainAxisSpacing: 4,
+                                      crossAxisSpacing: 4,
+                                      children: backpackState
+                                          .map((e) => Container(
+                                              decoration: BoxDecoration(
+                                                color: e ? Colors.red : Colors.green,
+                                              ),
+                                              child: Text("")))
+                                          .toList(),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(
+                          color: Colors.black,
+                        ),
+
                       ],
                     ),
                   )),
