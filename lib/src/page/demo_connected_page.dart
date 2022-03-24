@@ -16,6 +16,8 @@ class DemoConnectedPage extends ConsumerStatefulWidget {
 }
 
 class _DemoConnectedPageState extends ConsumerState<DemoConnectedPage> {
+
+
   Future connectDevice() async {
     print("[Call] connectDevice()");
     FlutterP2pPlus _flutterP2pPlus = ref.read(wifiDirectProvider).flutterP2pPlus;
